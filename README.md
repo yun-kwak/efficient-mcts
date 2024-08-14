@@ -1,8 +1,36 @@
 # Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstraction
 
-## Credits
+[UAI'24 Oral](https://openreview.net/forum?id=UvDsWevxUI) | [ArXiv](https://arxiv.org/abs/2406.00614)
 
-The source code in this repository is based on:
+This repository contains the official implementation of the publication:
+Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstraction, Yunhyeok Kwak, Inwoo Hwang, Dooyoung Kim, Sanghack Lee, Byoung-Tak Zhang, The 40th Conference on Uncertainty in Artificial Intelligence, 2024.
+
+
+## 📦 Installation
+
+```bash
+
+```
+
+
+## ✒️ Citation
+
+If you use this code in your research, please cite the following paper:
+
+```
+@inproceedings{
+    kwak2024efficient,
+    title={Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstraction},
+    author={Yunhyeok Kwak and Inwoo Hwang and Dooyoung Kim and Sanghack Lee and Byoung-Tak Zhang},
+    booktitle={The 40th Conference on Uncertainty in Artificial Intelligence},
+    year={2024},
+    url={https://openreview.net/forum?id=UvDsWevxUI}
+}
+```
+
+## 📖 Credits
+
+This repository is based on the following repositories:
 
 - [jax_muzero](https://github.com/Hwhitetooth/jax_muzero)
 - [Haiku](https://github.com/google-deepmind/dm-haiku)

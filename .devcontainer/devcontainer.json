@@ -1,0 +1,31 @@
+{
+	"name": "Pine",
+	"image": "yunkwak/efficient-mcts:1.0",
+	"containerUser": "user",
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"installZsh": true,
+			"installOhinstallOhMyZsh": true,
+			"configureZshAsDefaultShell": true,
+			"upgradePackages": false
+		}
+	},
+	"privileged": true,
+	"runArgs": [
+		"--runtime",
+		"nvidia",
+		"--net",
+		"host",
+		"--ipc",
+		"host",
+		"--gpus",
+		"all",
+		// "--env-file",
+		// ".devcontainer/devcontainer.env",
+		// "--shm-size",
+		// "412gb",
+		// "-v",
+		// "/data:/data"
+	],
+	"onCreateCommand": "pip install -e /workspaces/efficient-mcts/pine"
+}

@@ -6,7 +6,7 @@ from gym_minigrid.minigrid import DIR_TO_VEC
 from gym_minigrid.wrappers import ImgObsWrapper, RGBImgObsWrapper
 
 from ...vec_env import DummyVecEnv, Monitor, ShmemVecEnv
-from ..atari import WarpFrame
+from ..utils import WarpFrame
 from .doorkey import *
 from .empty import *
 
@@ -229,7 +229,9 @@ def _action_influence(
             key_influence = True
 
     if ball_pos_lst is not None:
-        if any(_is_reachable(agent_pos, agent_dir, ball_pos) for ball_pos in ball_pos_lst):
+        if any(
+            _is_reachable(agent_pos, agent_dir, ball_pos) for ball_pos in ball_pos_lst
+        ):
             # The agent can remove the ball
             ball_influence = True
 
@@ -314,13 +316,24 @@ class FactoredActionInfluenceInfoWrapper(gym.Wrapper):
             key_influence,
             door_influence,
             ball_influence,
-        ) = _action_influence(agent_pos, agent_dir, has_key,
-                              key_pos_lst, door_pos_lst, ball_pos_lst)
+        ) = _action_influence(
+            agent_pos, agent_dir, has_key, key_pos_lst, door_pos_lst, ball_pos_lst
+        )
 
         if self.env.unwrapped.blocked:
-            return np.array([turn_influence, move_influence, key_influence, door_influence, ball_influence])
+            return np.array(
+                [
+                    turn_influence,
+                    move_influence,
+                    key_influence,
+                    door_influence,
+                    ball_influence,
+                ]
+            )
         else:
-            return np.array([turn_influence, move_influence, key_influence, door_influence])
+            return np.array(
+                [turn_influence, move_influence, key_influence, door_influence]
+            )
 
     def step(self, action):
         """Step through the environment with the factored action."""

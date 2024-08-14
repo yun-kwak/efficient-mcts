@@ -1,10 +1,10 @@
 import gym
 from ..minigrid import ProductFactoredActionWrapper
+from ..utils import WarpFrame
 import gym_sokoban
 
 from ...vec_env.dummy_vec_env import DummyVecEnv
 from ...vec_env.shmem_vec_env import ShmemVecEnv
-from ..atari import WarpFrame
 from ...vec_env.monitor import Monitor
 
 from .pull import *
