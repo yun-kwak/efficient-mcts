@@ -8,8 +8,15 @@ Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstra
 
 ## 📦 Installation
 
-```bash
+- Use the Docker image (recommended): `yunkwak/efficient-mcts:1.0`
+- Or, install the dependencies manually. JAX should be installed separately. (Tested on Python 3.10, jax==0.4.16, haiku==0.0.10): `.devcontainer/requirements.txt`
 
+## 🚀 Quick Start
+
+To run the experiments, use the following commands:
+
+```bash
+python scripts/run_experiment.py
 ```
 
 
