@@ -5,6 +5,9 @@
 This repository contains the official implementation of the publication:
 Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstraction, Yunhyeok Kwak, Inwoo Hwang, Dooyoung Kim, Sanghack Lee, Byoung-Tak Zhang, The 40th Conference on Uncertainty in Artificial Intelligence, 2024.
 
+<img width="2122" alt="image" src="https://github.com/user-attachments/assets/9bd1957e-5621-400c-93ad-2bf60d107611">
+
+
 
 ## 📦 Installation
 
