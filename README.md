@@ -1,6 +1,7 @@
 # Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstraction
 
-[UAI'24 Oral](https://openreview.net/forum?id=UvDsWevxUI) | [ArXiv](https://arxiv.org/abs/2406.00614)
+[![UAI'24 Oral](https://img.shields.io/badge/UAI'24-Oral-331b1b.svg)](https://openreview.net/forum?id=UvDsWevxUI)
+[![arXiv](https://img.shields.io/badge/arXiv-2406.00614-b31b1b.svg)](https://arxiv.org/abs/2406.00614)
 
 This repository contains the official implementation of the publication:
 Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstraction, Yunhyeok Kwak, Inwoo Hwang, Dooyoung Kim, Sanghack Lee, Byoung-Tak Zhang, The 40th Conference on Uncertainty in Artificial Intelligence, 2024.
