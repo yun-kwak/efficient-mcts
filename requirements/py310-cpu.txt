@@ -29,7 +29,7 @@ plotly==5.17.0
 pygraphviz==1.11
 seaborn==0.12.2
 tensorboard==2.14.1
-tqdm==4.66.1
+tqdm==4.66.3
 wandb==0.15.12
 
 black==23.9.1
