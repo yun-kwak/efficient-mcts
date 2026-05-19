@@ -155,6 +155,58 @@ class ResidualTransposedConvBlockV2(hk.Module):
         return shortcut + out
 
 
+class ResidualTransposedConvBlockV1(hk.Module):
+    """A v1 residual transposed convolutional block."""
+
+    def __init__(
+        self,
+        channels,
+        stride: int,
+        use_projection: bool,
+        name="residual_transposed_conv_block_v1",
+    ):
+        super(ResidualTransposedConvBlockV1, self).__init__(name=name)
+        self._use_projection = use_projection
+        if use_projection:
+            self._proj_conv = hk.Conv2DTranspose(
+                channels, kernel_shape=3, stride=stride, padding="SAME", with_bias=False
+            )
+            self._proj_ln = hk.LayerNorm(
+                axis=(-3, -2, -1), create_scale=True, create_offset=True
+            )
+        self._conv_0 = hk.Conv2DTranspose(
+            channels, kernel_shape=3, stride=stride, padding="SAME", with_bias=False
+        )
+        self._ln_0 = hk.LayerNorm(
+            axis=(-3, -2, -1), create_scale=True, create_offset=True
+        )
+        self._conv_1 = hk.Conv2DTranspose(
+            channels, kernel_shape=3, stride=1, padding="SAME", with_bias=False
+        )
+        self._ln_1 = hk.LayerNorm(
+            axis=(-3, -2, -1), create_scale=True, create_offset=True
+        )
+
+    def __call__(self, x):
+        shortcut = out = x
+
+        if self._use_projection:
+            shortcut = self._proj_conv(shortcut)
+            shortcut = self._proj_ln(shortcut)
+
+        out = hk.Sequential(
+            [
+                self._conv_0,
+                self._ln_0,
+                jax.nn.relu,
+                self._conv_1,
+                self._ln_1,
+            ]
+        )(out)
+
+        return jax.nn.relu(shortcut + out)
+
+
 class EZStateEncoder(hk.Module):
     """EfficientZero encoder architecture."""
 

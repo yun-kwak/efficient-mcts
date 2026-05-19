@@ -5,7 +5,7 @@
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {
 			"installZsh": true,
-			"installOhinstallOhMyZsh": true,
+			"installOhMyZsh": true,
 			"configureZshAsDefaultShell": true,
 			"upgradePackages": false
 		}
