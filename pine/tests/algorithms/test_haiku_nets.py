@@ -1,19 +1,25 @@
 import jax
 import haiku as hk
+import pytest
 
 import pine.algorithms.haiku_nets as nets
 
 
-def test_residual_conv_block():
+@pytest.mark.parametrize("use_v2", [True, False])
+def test_residual_conv_block(use_v2):
     def encoder_fn(observations):
-        return nets.ResidualConvBlockV2(channels=16, stride=2, use_projection=True)(
+        block_cls = nets.ResidualConvBlockV2 if use_v2 else nets.ResidualConvBlockV1
+        return block_cls(channels=16, stride=2, use_projection=True)(
             observations
         )
 
     def decoder_fn(states):
-        return nets.ResidualTransposedConvBlockV2(
-            channels=3, stride=2, use_projection=True
-        )(states)
+        block_cls = (
+            nets.ResidualTransposedConvBlockV2
+            if use_v2
+            else nets.ResidualTransposedConvBlockV1
+        )
+        return block_cls(channels=3, stride=2, use_projection=True)(states)
 
     encoder_model = hk.without_apply_rng(hk.transform(encoder_fn))
     decoder_model = hk.without_apply_rng(hk.transform(decoder_fn))
@@ -27,10 +33,11 @@ def test_residual_conv_block():
     assert out.shape == obs.shape
 
 
-def test_reconstruction():
+@pytest.mark.parametrize("use_v2", [True, False])
+def test_reconstruction(use_v2):
     def recon_model_fn(observations):
-        encoder = nets.EZStateEncoder(channels=16, use_v2=True)
-        decoder = nets.EZStateDecoder(channels=16, use_v2=True)
+        encoder = nets.EZStateEncoder(channels=16, use_v2=use_v2)
+        decoder = nets.EZStateDecoder(channels=16, use_v2=use_v2)
         states = encoder(observations)
         return decoder(states)
 

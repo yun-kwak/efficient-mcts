@@ -1,4 +1,5 @@
 import argparse
+import json
 import warnings
 
 import wandb
@@ -10,6 +11,18 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="seaborn")
 
 def parse_bool(x):
     return x.capitalize() == "True"
+
+
+def to_jsonable(value):
+    if hasattr(value, "item"):
+        return value.item()
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    if isinstance(value, dict):
+        return {k: to_jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [to_jsonable(v) for v in value]
+    return value
 
 
 if __name__ == "__main__":
@@ -88,10 +101,9 @@ if __name__ == "__main__":
     parser.add_argument("--loglevel", default="WARNING", type=str)
     parser.add_argument("--exp_name", type=str)
     parser.add_argument("--run_name", type=str)
+    parser.add_argument("--metrics_path", type=str)
 
     args = parser.parse_args()
-
-    import json
 
     args.env_kwargs = json.loads(args.env_kwargs)
 
@@ -120,4 +132,20 @@ if __name__ == "__main__":
     num_iters = (
         (args.total_frames - args.replay_min_size) // args.num_envs
     ) // args.log_interval
-    exp.run(num_iters)
+    metrics_file = None
+    if args.metrics_path:
+        import os
+
+        os.makedirs(os.path.dirname(args.metrics_path) or ".", exist_ok=True)
+        metrics_file = open(args.metrics_path, "a", encoding="utf-8")
+
+    try:
+        for _ in range(num_iters):
+            log = exp.step()
+            if metrics_file is not None:
+                metrics_file.write(json.dumps(to_jsonable(log), sort_keys=True) + "\n")
+                metrics_file.flush()
+    finally:
+        exp.cleanup()
+        if metrics_file is not None:
+            metrics_file.close()

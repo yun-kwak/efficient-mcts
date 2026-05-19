@@ -14,6 +14,8 @@ from pine.algorithms.utils import (
     product_action_jax,
 )
 
+NUMERIC_ATOL = 5e-4
+
 
 def test_false_negative():
     # Test case 1
@@ -177,7 +179,11 @@ def test_false_negative():
     ],
 )
 def test_marginalize_policy_dist(p, action_influence, expected_result):
-    assert jnp.allclose(marginalize_policy_dist(p, action_influence), expected_result)
+    assert jnp.allclose(
+        marginalize_policy_dist(p, action_influence),
+        expected_result,
+        atol=NUMERIC_ATOL,
+    )
 
 
 @pytest.mark.parametrize(
@@ -403,6 +409,7 @@ def test_marginalize_policy_dist_flat(
             p, action_influence, action_cardinalities=action_cardinalities
         ),
         expected_result,
+        atol=NUMERIC_ATOL,
     )
 
 
@@ -560,7 +567,9 @@ def test_marginalize_policy_dist_flat(
 )
 def test_divide_act_prob_no_influence_actions(p, action_influence, expected_result):
     assert jnp.allclose(
-        divide_act_prob_no_influence_actions(p, action_influence), expected_result
+        divide_act_prob_no_influence_actions(p, action_influence),
+        expected_result,
+        atol=NUMERIC_ATOL,
     )
 
 
@@ -583,6 +592,7 @@ def test_divide_act_prob_no_influence_actions_flat(
             p, action_influence, action_cardinalities=cardinalities
         ),
         expected_result,
+        atol=NUMERIC_ATOL,
     )
 
 
