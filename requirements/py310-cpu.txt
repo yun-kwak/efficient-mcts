@@ -1,8 +1,12 @@
-# JAX is not included here. The Docker base image has it pre-installed.
-# For a local CPU setup outside Docker, use requirements/py310-cpu.txt.
+# Known-good local CPU environment, tested with Python 3.10 on macOS arm64.
+# The original Docker image remains the recommended GPU environment.
+#
+# If pygraphviz fails to build on macOS with Homebrew Graphviz, install with:
+# CFLAGS="-I/opt/homebrew/include" LDFLAGS="-L/opt/homebrew/lib" pip install -r requirements/py310-cpu.txt
 
-setuptools==68.2.2
+setuptools==78.1.1
 
+jax[cpu]==0.4.20
 numpy==1.24.4
 scipy==1.11.4
 
