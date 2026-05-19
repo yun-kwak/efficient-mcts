@@ -1,0 +1,93 @@
+{
+  "defaults": {
+    "debug": "False",
+    "num_envs": 16,
+    "unroll_steps": 5,
+    "td_steps": 5,
+    "max_search_depth": 100,
+    "num_bins": 601,
+    "channels": 64,
+    "use_resnet_v2": "True",
+    "output_init_scale": 0.0,
+    "discount_factor": 0.997,
+    "mcts_c1": 1.25,
+    "mcts_c2": 19625,
+    "alpha": 0.3,
+    "exploration_prob": 0.25,
+    "temperature_scheduling": "staircase",
+    "q_normalize_epsilon": 0.01,
+    "child_select_epsilon": 0.000001,
+    "num_simulations": 50,
+    "replay_min_size": 32000,
+    "replay_max_size": 1000000,
+    "batch_size": 256,
+    "value_coef": 0.25,
+    "policy_coef": 1.0,
+    "learning_rate": 0.001,
+    "warmup_steps": 1000,
+    "learning_rate_decay": 0.1,
+    "weight_decay": 0.0001,
+    "target_update_interval": 200,
+    "evaluate_episodes": 32,
+    "log_interval": 2000,
+    "total_frames": 1632000,
+    "use_abst_policy_learning": "False",
+    "mask_temp": 1.0,
+    "mask_thres": 0.5,
+    "mcts_mask_thres": 0.01,
+    "mask_coef": 0.0,
+    "causal_uct_start_step": 0,
+    "use_consistency_loss": "False",
+    "consistency_coef": 0.0,
+    "use_recon_loss": "True",
+    "n_frame_stack": 1,
+    "save_interval": 10000,
+    "loglevel": "WARNING"
+  },
+  "methods": {
+    "ours": {
+      "use_action_mask": "True"
+    },
+    "muzero": {
+      "use_action_mask": "False"
+    }
+  },
+  "tasks": {
+    "doorkey_easy": {
+      "env_id": "MiniGrid-Color-DoorKey-Random-Goal-12x12-C2-v0",
+      "action_cardinalities": "[3,2,3,3]",
+      "max_grad_norm": 100.0,
+      "recon_coef": 1.0
+    },
+    "doorkey_normal": {
+      "env_id": "MiniGrid-Color-DoorKey-Random-Goal-12x12-C3-v0",
+      "action_cardinalities": "[3,2,4,4]",
+      "max_grad_norm": 100.0,
+      "recon_coef": 1.0
+    },
+    "doorkey_hard": {
+      "env_id": "MiniGrid-Color-DoorKey-Random-Goal-12x12-C4-v0",
+      "action_cardinalities": "[3,2,5,5]",
+      "max_grad_norm": 100.0,
+      "recon_coef": 1.0
+    },
+    "sokoban_easy": {
+      "env_id": "Sokoban-PushAndPull-7x7-B1-C2",
+      "action_cardinalities": "[5,3,3]",
+      "max_grad_norm": 5.0,
+      "recon_coef": 0.1
+    },
+    "sokoban_normal": {
+      "env_id": "Sokoban-PushAndPull-7x7-B1-C3",
+      "action_cardinalities": "[5,3,3,3]",
+      "max_grad_norm": 5.0,
+      "recon_coef": 0.1
+    },
+    "sokoban_hard": {
+      "env_id": "Sokoban-PushAndPull-7x7-B1-C4",
+      "action_cardinalities": "[5,3,3,3,3]",
+      "max_grad_norm": 5.0,
+      "recon_coef": 0.1
+    }
+  }
+}
