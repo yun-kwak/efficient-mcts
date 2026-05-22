@@ -1,4 +1,6 @@
 import argparse
+import json
+import logging
 import warnings
 
 import wandb
@@ -28,7 +30,6 @@ if __name__ == "__main__":
     parser.add_argument("--max_search_depth", default=100, type=int)
     parser.add_argument("--num_bins", default=601, type=int)
     parser.add_argument("--channels", default=64, type=int)
-    parser.add_argument("--use_resnet_v2", default="True", type=parse_bool)
     parser.add_argument("--output_init_scale", default=0.0, type=float)
     parser.add_argument("--discount_factor", default=0.997, type=float)
     parser.add_argument("--mcts_c1", default=1.25, type=float)
@@ -91,22 +92,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    import json
-
     args.env_kwargs = json.loads(args.env_kwargs)
 
     config = {}
     for x in vars(args):
         config[x] = getattr(args, x)
-    wandb.init(
-        project="efficient-mcts",
-        group=args.exp_name,
-        config=config,
-        name=args.run_name,
-    )
-
-    import logging
-
     loglevel_dict = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
@@ -116,7 +106,15 @@ if __name__ == "__main__":
     }
     logging.basicConfig(level=loglevel_dict[args.loglevel])
 
+    wandb.init(
+        project="efficient-mcts",
+        group=args.exp_name,
+        config=config,
+        name=args.run_name,
+    )
+
     exp = Experiment(config)
+
     num_iters = (
         (args.total_frames - args.replay_min_size) // args.num_envs
     ) // args.log_interval

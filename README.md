@@ -10,19 +10,64 @@ Efficient Monte Carlo Tree Search via On-the-Fly State-Conditioned Action Abstra
     <img width="1600" alt="image" src="https://github.com/user-attachments/assets/9bd1957e-5621-400c-93ad-2bf60d107611">
 </div>
 
-
-
 ## 📦 Installation
 
-- Use the Docker image (recommended): `yunkwak/efficient-mcts:1.0` ([Docker Hub](https://hub.docker.com/layers/yunkwak/efficient-mcts/1.0/images/sha256-b50c57d2d842b406affeee73413d9e926ed827c4e1ca4d699a1cfd658457a256))
-- Or, install the dependencies manually. JAX should be installed separately. (Tested on Python 3.10, jax==0.4.16, haiku==0.0.10): `.devcontainer/requirements.txt`
+### Docker image
+
+The recommended setup is the published Docker image:
+
+```bash
+docker pull yunkwak/efficient-mcts:1.0
+```
+
+For an exactly pinned image, use the digest:
+
+```bash
+docker pull yunkwak/efficient-mcts@sha256:b50c57d2d842b406affeee73413d9e926ed827c4e1ca4d699a1cfd658457a256
+```
+
+The image contains the Python, JAX, CUDA, and Python package dependencies. It does not bundle a checkout of this repository. Clone the repository on the host, mount it into the container, then install the local `pine` package in editable mode:
+
+```bash
+git clone https://github.com/yun-kwak/efficient-mcts.git
+cd efficient-mcts
+
+docker run --rm --gpus all -it \
+  -v "$PWD":/workspace/efficient-mcts \
+  -w /workspace/efficient-mcts \
+  -e WANDB_MODE=disabled \
+  yunkwak/efficient-mcts:1.0 \
+  bash
+
+pip install -e pine
+python -m pytest -q pine/tests
+```
 
 ## 🚀 Quick Start
 
-To run the experiments, use the following commands:
+Run the unit tests:
 
 ```bash
-python scripts/run_experiment.py
+python -m pytest -q pine/tests
+```
+
+Run one paper preset:
+
+```bash
+WANDB_MODE=disabled python scripts/run_paper_preset.py \
+  --task doorkey_easy \
+  --method ours \
+  --seed 1 \
+  --save_dir ./outputs
+```
+
+Run the default Sokoban experiment:
+
+```bash
+python scripts/run_experiment.py \
+  --env_id Sokoban-PushAndPull-7x7-B1-C3 \
+  --exp_name sokoban-push-pull \
+  --run_name seed1
 ```
 
 

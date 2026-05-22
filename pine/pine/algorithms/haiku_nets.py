@@ -9,60 +9,6 @@ import jax.numpy as jnp
 EPS = 1e-17
 
 
-class ResidualConvBlockV1(hk.Module):
-    """A v1 residual convolutional block."""
-
-    def __init__(
-        self,
-        channels: int,
-        stride: int,
-        use_projection: bool,
-        name="residual_conv_block_v1",
-    ):
-        super(ResidualConvBlockV1, self).__init__(name=name)
-        self._use_projection = use_projection
-        if use_projection:
-            self._proj_conv = hk.Conv2D(
-                channels, kernel_shape=3, stride=stride, padding="SAME", with_bias=False
-            )
-            self._proj_ln = hk.LayerNorm(
-                axis=(-3, -2, -1), create_scale=True, create_offset=True
-            )
-        self._conv_0 = hk.Conv2D(
-            channels, kernel_shape=3, stride=stride, padding="SAME", with_bias=False
-        )
-        self._ln_0 = hk.LayerNorm(
-            axis=(-3, -2, -1), create_scale=True, create_offset=True
-        )
-        self._conv_1 = hk.Conv2D(
-            channels, kernel_shape=3, stride=1, padding="SAME", with_bias=False
-        )
-        self._ln_1 = hk.LayerNorm(
-            axis=(-3, -2, -1), create_scale=True, create_offset=True
-        )
-
-    def __call__(self, x):
-        # NOTE: Replacing BatchNorm with LayerNorm is totally fine for RL.
-        #   See https://arxiv.org/pdf/2104.06294.pdf Appendix A for an example.
-        shortcut = out = x
-
-        if self._use_projection:
-            shortcut = self._proj_conv(shortcut)
-            shortcut = self._proj_ln(shortcut)
-
-        out = hk.Sequential(
-            [
-                self._conv_0,
-                self._ln_0,
-                jax.nn.relu,
-                self._conv_1,
-                self._ln_1,
-            ]
-        )(out)
-
-        return jax.nn.relu(shortcut + out)
-
-
 class ResidualConvBlockV2(hk.Module):
     """A v2 residual convolutional block."""
 
@@ -158,13 +104,11 @@ class ResidualTransposedConvBlockV2(hk.Module):
 class EZStateEncoder(hk.Module):
     """EfficientZero encoder architecture."""
 
-    def __init__(self, channels, use_v2, name="ez_state_encoder"):
+    def __init__(self, channels, name="ez_state_encoder"):
         super(EZStateEncoder, self).__init__(name=name)
         self._channels = channels
-        self._use_v2 = use_v2
 
     def __call__(self, observations: chex.Array) -> chex.Array:
-        ResBlock = ResidualConvBlockV2 if self._use_v2 else ResidualConvBlockV1
         torso = [
             lambda x: x / 255.0,
             hk.Conv2D(
@@ -175,24 +119,21 @@ class EZStateEncoder(hk.Module):
                 with_bias=False,
             ),
         ]
-        if not self._use_v2:
-            torso.extend(
-                [
-                    hk.LayerNorm(
-                        axis=(-3, -2, -1), create_scale=True, create_offset=True
-                    ),
-                    jax.nn.relu,
-                ]
+        torso.append(
+            ResidualConvBlockV2(
+                self._channels // 2, stride=1, use_projection=False
             )
-        torso.append(ResBlock(self._channels // 2, stride=1, use_projection=False))
-        torso.append(ResBlock(self._channels, stride=2, use_projection=True))
+        )
+        torso.append(
+            ResidualConvBlockV2(self._channels, stride=2, use_projection=True)
+        )
         torso.extend(
             [
-                ResBlock(self._channels, stride=1, use_projection=False),
+                ResidualConvBlockV2(self._channels, stride=1, use_projection=False),
                 hk.AvgPool(window_shape=(3, 3, 1), strides=(2, 2, 1), padding="SAME"),
-                ResBlock(self._channels, stride=1, use_projection=False),
+                ResidualConvBlockV2(self._channels, stride=1, use_projection=False),
                 hk.AvgPool(window_shape=(3, 3, 1), strides=(2, 2, 1), padding="SAME"),
-                ResBlock(self._channels, stride=1, use_projection=False),
+                ResidualConvBlockV2(self._channels, stride=1, use_projection=False),
             ]
         )
         return hk.Sequential(torso)(observations)
@@ -201,40 +142,35 @@ class EZStateEncoder(hk.Module):
 class EZStateDecoder(hk.Module):
     """EfficientZero decoder architecture."""
 
-    def __init__(self, channels, use_v2, channels_out=3, name="ez_state_decoder"):
+    def __init__(self, channels, channels_out=3, name="ez_state_decoder"):
         super(EZStateDecoder, self).__init__(name=name)
         self._channels = channels
-        self._use_v2 = use_v2
         self._channels_out = channels_out
 
     def __call__(self, states: chex.Array) -> chex.Array:
-        ResBlock = (
-            ResidualTransposedConvBlockV2
-            if self._use_v2
-            else ResidualTransposedConvBlockV1
-        )
         torso = [
-            ResBlock(self._channels, stride=1, use_projection=False),
-            ResBlock(
+            ResidualTransposedConvBlockV2(
+                self._channels, stride=1, use_projection=False
+            ),
+            ResidualTransposedConvBlockV2(
                 self._channels, stride=2, use_projection=True
             ),  # Use transpose conv instead of unpooling
-            ResBlock(self._channels, stride=1, use_projection=False),
-            ResBlock(
+            ResidualTransposedConvBlockV2(
+                self._channels, stride=1, use_projection=False
+            ),
+            ResidualTransposedConvBlockV2(
                 self._channels, stride=2, use_projection=True
             ),  # Use transpose conv instead of unpooling
-            ResBlock(self._channels, stride=1, use_projection=False),
-            ResBlock(self._channels // 2, stride=2, use_projection=True),
-            ResBlock(self._channels // 2, stride=1, use_projection=True),
+            ResidualTransposedConvBlockV2(
+                self._channels, stride=1, use_projection=False
+            ),
+            ResidualTransposedConvBlockV2(
+                self._channels // 2, stride=2, use_projection=True
+            ),
+            ResidualTransposedConvBlockV2(
+                self._channels // 2, stride=1, use_projection=True
+            ),
         ]
-        if not self._use_v2:
-            torso.extend(
-                [
-                    hk.LayerNorm(
-                        axis=(-3, -2, -1), create_scale=True, create_offset=True
-                    ),
-                    jax.nn.relu,
-                ]
-            )
         torso.extend(
             [
                 hk.Conv2DTranspose(
@@ -257,7 +193,6 @@ class EZPrediction(hk.Module):
         num_actions,
         num_bins,
         output_init_scale,
-        use_v2,
         use_action_mask: bool,
         num_action_variables: int,
         name="ez_prediction",
@@ -266,105 +201,64 @@ class EZPrediction(hk.Module):
         self._num_actions = num_actions
         self._num_bins = num_bins
         self._output_init_scale = output_init_scale
-        self._use_v2 = use_v2
         self._use_action_mask = use_action_mask
         self._num_action_variables = num_action_variables
 
     def __call__(self, states: chex.Array) -> Tuple[chex.Array, chex.Array, chex.Array]:
         # NOTE: Somehow reward predictions do not have a residual block before the 1x1 convolutions.
-        ResBlock = ResidualConvBlockV2 if self._use_v2 else ResidualConvBlockV1
         output_init = hk.initializers.VarianceScaling(scale=self._output_init_scale)
-        reward_head = []
-        if self._use_v2:
-            reward_head.extend(
-                [
-                    hk.LayerNorm(
-                        axis=(-3, -2, -1), create_scale=True, create_offset=True
-                    ),
-                    jax.nn.relu,
-                ]
-            )
-        reward_head.extend(
-            [
-                hk.Conv2D(
-                    16, kernel_shape=1, stride=1, padding="SAME", with_bias=False
-                ),
-                hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
-                jax.nn.relu,
-                hk.Flatten(-3),
-                hk.Linear(32, with_bias=False),
-                hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
-                jax.nn.relu,
-                hk.Linear(self._num_bins, w_init=output_init),
-            ]
-        )
+        reward_head = [
+            hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Conv2D(16, kernel_shape=1, stride=1, padding="SAME", with_bias=False),
+            hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Flatten(-3),
+            hk.Linear(32, with_bias=False),
+            hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Linear(self._num_bins, w_init=output_init),
+        ]
         reward_logits = hk.Sequential(reward_head)(states)
-        out = ResBlock(states.shape[-1], stride=1, use_projection=False)(states)
-        value_head = []
-        if self._use_v2:
-            value_head.extend(
-                [
-                    hk.LayerNorm(
-                        axis=(-3, -2, -1), create_scale=True, create_offset=True
-                    ),
-                    jax.nn.relu,
-                ]
-            )
-        value_head.extend(
-            [
-                hk.Conv2D(
-                    16, kernel_shape=1, stride=1, padding="SAME", with_bias=False
-                ),
-                hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
-                jax.nn.relu,
-                hk.Flatten(-3),
-                hk.Linear(32, with_bias=False),
-                hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
-                jax.nn.relu,
-                hk.Linear(self._num_bins, w_init=output_init),
-            ]
-        )
+        out = ResidualConvBlockV2(
+            states.shape[-1], stride=1, use_projection=False
+        )(states)
+        value_head = [
+            hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Conv2D(16, kernel_shape=1, stride=1, padding="SAME", with_bias=False),
+            hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Flatten(-3),
+            hk.Linear(32, with_bias=False),
+            hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Linear(self._num_bins, w_init=output_init),
+        ]
         value_logits = hk.Sequential(value_head)(out)
 
-        logits_head = []
-        if self._use_v2:
-            logits_head.extend(
-                [
-                    hk.LayerNorm(
-                        axis=(-3, -2, -1), create_scale=True, create_offset=True
-                    ),
-                    jax.nn.relu,
-                ]
-            )
-        logits_head.extend(
-            [
-                hk.Conv2D(
-                    16, kernel_shape=1, stride=1, padding="SAME", with_bias=False
-                ),
-                hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
-                jax.nn.relu,
-                hk.Flatten(-3),
-                hk.Linear(32, with_bias=False),
-                hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
-                jax.nn.relu,
-                hk.Linear(self._num_actions, w_init=output_init),
-            ]
-        )
+        logits_head = [
+            hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Conv2D(16, kernel_shape=1, stride=1, padding="SAME", with_bias=False),
+            hk.LayerNorm(axis=(-3, -2, -1), create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Flatten(-3),
+            hk.Linear(32, with_bias=False),
+            hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
+            jax.nn.relu,
+            hk.Linear(self._num_actions, w_init=output_init),
+        ]
         logits = hk.Sequential(logits_head)(out)
 
         masks_head = []
         if self._use_action_mask:
-            if self._use_v2:
-                masks_head.extend(
-                    [
-                        hk.LayerNorm(
-                            axis=(-3, -2, -1), create_scale=True, create_offset=True
-                        ),
-                        jax.nn.relu,
-                    ]
-                )
             masks_head.extend(
                 [
+                    hk.LayerNorm(
+                        axis=(-3, -2, -1), create_scale=True, create_offset=True
+                    ),
+                    jax.nn.relu,
                     hk.Conv2D(
                         16, kernel_shape=1, stride=1, padding="SAME", with_bias=False
                     ),
@@ -398,21 +292,18 @@ class EZPrediction(hk.Module):
 class EZTransition(hk.Module):
     """EfficientZero transition architecture."""
 
-    def __init__(self, use_v2, name="ez_transition"):
+    def __init__(self, name="ez_transition"):
         super(EZTransition, self).__init__(name=name)
-        self._use_v2 = use_v2
 
     def __call__(self, inputs, prev_state) -> chex.Array:
         channels = prev_state.shape[-1]
-        ResBlock = ResidualConvBlockV2 if self._use_v2 else ResidualConvBlockV1
         shortcut = prev_state
-        if self._use_v2:
-            prev_state = hk.LayerNorm(
-                axis=(-3, -2, -1), create_scale=True, create_offset=True
-            )(prev_state)
-            prev_state = jax.nn.relu(
-                prev_state
-            )  # e.g. [6, 6, 64]  (Original MiniGrid env)
+        prev_state = hk.LayerNorm(
+            axis=(-3, -2, -1), create_scale=True, create_offset=True
+        )(prev_state)
+        prev_state = jax.nn.relu(
+            prev_state
+        )  # e.g. [6, 6, 64]  (Original MiniGrid env)
         inputs = inputs[None, None, :]
         action_one_hot = jnp.broadcast_to(
             inputs, prev_state.shape[:-1] + inputs.shape[-1:]
@@ -421,14 +312,8 @@ class EZTransition(hk.Module):
         out = hk.Conv2D(
             channels, kernel_shape=3, stride=1, padding="SAME", with_bias=False
         )(x_and_h)
-        if self._use_v2:
-            out += shortcut
-        else:
-            out = hk.LayerNorm(
-                axis=(-3, -2, -1), create_scale=True, create_offset=True
-            )(out)
-            out = jax.nn.relu(out + shortcut)
-        out = ResBlock(channels, stride=1, use_projection=False)(out)
+        out += shortcut
+        out = ResidualConvBlockV2(channels, stride=1, use_projection=False)(out)
         return out
 
 

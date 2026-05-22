@@ -38,7 +38,6 @@ class Agent(object):
         action_space: gym.spaces.Discrete,
         num_bins: int,
         channels: int,
-        use_v2: bool,
         output_init_scale: float,
         discount_factor: float,
         num_simulations: int,
@@ -87,9 +86,7 @@ class Agent(object):
         self.value_transform = value_transform
         self.inv_value_transform = inv_value_transform
         self._encode_fn = hk.without_apply_rng(
-            hk.transform(
-                lambda observations: EZStateEncoder(channels, use_v2)(observations)
-            )
+            hk.transform(lambda observations: EZStateEncoder(channels)(observations))
         )
         num_actions = self._action_space.n
         self._predict_fn = hk.without_apply_rng(
@@ -98,19 +95,18 @@ class Agent(object):
                     num_actions,
                     num_bins,
                     output_init_scale,
-                    use_v2,
                     use_action_mask,
                     num_action_variables,
                 )(states)
             )
         )
         self._transit_fn = hk.without_apply_rng(
-            hk.transform(lambda action, state: EZTransition(use_v2)(action, state))
+            hk.transform(lambda action, state: EZTransition()(action, state))
         )
         self._decode_fn = hk.without_apply_rng(
             hk.transform(
                 lambda states: EZStateDecoder(
-                    channels, use_v2, channels_out=3 * n_frame_stack
+                    channels, channels_out=3 * n_frame_stack
                 )(states)
             )
         )

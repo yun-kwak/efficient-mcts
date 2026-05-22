@@ -29,8 +29,8 @@ def test_residual_conv_block():
 
 def test_reconstruction():
     def recon_model_fn(observations):
-        encoder = nets.EZStateEncoder(channels=16, use_v2=True)
-        decoder = nets.EZStateDecoder(channels=16, use_v2=True)
+        encoder = nets.EZStateEncoder(channels=16)
+        decoder = nets.EZStateDecoder(channels=16)
         states = encoder(observations)
         return decoder(states)
 
